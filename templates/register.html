@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="auth-section" data-aos="fade-up">
+  <h2>Register</h2>
+  <form method="post" action="{{ url_for('register') }}">
+    <label>Username</label>
+    <div class="input-group"><i class='bx bx-user'></i><input type="text" name="username" required></div>
+
+    <label>Email</label>
+    <div class="input-group"><i class='bx bx-envelope'></i><input type="email" name="email" required></div>
+
+    <label>Phone</label>
+    <div class="input-group"><i class='bx bx-phone'></i><input type="text" name="phone"></div>
+
+    <label>Password</label>
+    <div class="input-group pw-group"><i class='bx bx-lock'></i><input class="pw-input" type="password" name="password" required><i class='bx bx-hide pw-toggle' title="Show/Hide password" style="cursor:pointer"></i></div>
+
+    <label>Confirm Password</label>
+    <div class="input-group pw-group"><i class='bx bx-lock'></i><input class="pw-input" type="password" name="confirm_password" required><i class='bx bx-hide pw-toggle' title="Show/Hide password" style="cursor:pointer"></i></div>
+
+    <label>Role</label>
+    <div class="input-group">
+      <i class='bx bx-id-card'></i>
+      <select name="role">
+        <option value="user">User</option>
+        <option value="worker">Worker</option>
+      </select>
+    </div>
+
+    <button class="btn primary" type="submit">Register</button>
+  </form>
+</section>
+{% endblock %}

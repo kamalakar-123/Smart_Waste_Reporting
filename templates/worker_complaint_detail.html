@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<section data-aos="fade-up">
+  <h2>Complaint #{{ complaint['id'] }} - Update</h2>
+  <div class="detail-grid">
+    <div class="card white">
+      <h4>Before</h4>
+      <img src="/{{ complaint['image_before_path'] }}" class="preview">
+    </div>
+    <div class="card white">
+      <h4>After</h4>
+      {% if complaint['image_after_path'] %}
+        <img src="/{{ complaint['image_after_path'] }}" class="preview">
+      {% else %}
+        <p class="muted">No after image yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card white">
+    <h4>Description</h4>
+    <p>{{ complaint['description'] }}</p>
+    <form method="post" action="{{ url_for('worker_update', cid=complaint['id']) }}" enctype="multipart/form-data">
+      <label>Set Status</label>
+      <select name="status">
+        <option value="Accepted">Accept</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+      </select>
+
+      <label>Upload After Image (required for Completed)</label>
+      <div class="input-group">
+        <input type="file" name="image_after" id="image_after" accept="image/*" capture="environment">
+      </div>
+      <div class="preview-wrap">
+        <img id="afterPreview" class="preview" alt="After preview" style="display:none; max-height:220px; object-fit:cover;" />
+      </div>
+
+      <button class="btn primary" type="submit">Update</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

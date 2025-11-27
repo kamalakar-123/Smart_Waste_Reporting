@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="auth-section" data-aos="fade-up">
+  <h2>Login</h2>
+  <form method="post" action="{{ url_for('login') }}">
+    <label>Email</label>
+    <div class="input-group"><i class='bx bx-envelope'></i><input type="email" name="email" required></div>
+
+    <label>Password</label>
+    <div class="input-group pw-group"><i class='bx bx-lock'></i><input class="pw-input" type="password" name="password" required><i class='bx bx-hide pw-toggle' title="Show/Hide password" style="cursor:pointer"></i></div>
+
+    <button class="btn primary" type="submit">Login</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<section data-aos="fade-up">
+  <h2>Public Completed Reports</h2>
+  <div class="cards-list">
+    {% for r in reports %}
+    <div class="card report" data-aos="fade-up">
+      <div class="card-row">
+        <div class="img-col">
+          {% if r['image_before_path'] %}
+            <img src="/{{ r['image_before_path'] }}" alt="before">
+          {% else %}
+            <div class="muted">Before image not provided</div>
+          {% endif %}
+        </div>
+        <div class="img-col">
+          {% if r['image_after_path'] %}
+            <img src="/{{ r['image_after_path'] }}" alt="after">
+          {% else %}
+            <div class="muted">After image not provided</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-body">
+        <h4>{{ r['description']|truncate(120) }}</h4>
+        <p>By {{ r['reporter'] }} | Updated: {{ r['updated_at'] }}</p>
+        <p><strong>Status:</strong> <span class="badge {{ r['status']|lower|replace(' ', '-') }}">{{ r['status'] }}</span></p>
+        <div class="card-actions">
+          <a class="btn small" href="{{ url_for('complaint_detail', cid=r['id']) }}">View</a>
+          {% if r['latitude'] and r['longitude'] %}
+            <a class="btn small" href="https://www.google.com/maps?q={{ r['latitude'] }},{{ r['longitude'] }}" target="_blank"><i class='bx bx-map'></i> Open in Maps</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <p>No completed reports yet.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

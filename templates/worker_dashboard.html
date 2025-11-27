@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="dashboard full-bleed" data-aos="fade-up">
+  <h2>Wellcome - {{ session.get('username') }}</h2>
+  <div class="cards">
+    <a class="card-link" href="{{ url_for('worker_open_complaints') }}">
+      <div class="card" data-aos="zoom-in">
+        <div class="card-icon"><i class='bx bx-briefcase'></i></div>
+        <div class="card-body">
+          <h3>Open Complaints</h3>
+          <p class="stat">{{ open_count }}</p>
+        </div>
+      </div>
+    </a>
+
+    <a class="card-link" href="{{ url_for('worker_completed_complaints') }}">
+      <div class="card" data-aos="zoom-in" data-aos-delay="100">
+        <div class="card-icon"><i class='bx bx-check'></i></div>
+        <div class="card-body">
+          <h3>Completed by Me</h3>
+          <p class="stat">{{ completed }}</p>
+        </div>
+      </div>
+    </a>
+  </div>
+</section>
+{% endblock %}

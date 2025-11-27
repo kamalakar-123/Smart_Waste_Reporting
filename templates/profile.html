@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="form-section" data-aos="fade-up">
+  <h2>My Profile</h2>
+  <div class="card white">
+    <p><strong>Username:</strong> {{ user['username'] }}</p>
+    <p><strong>Email:</strong> {{ user['email'] }}</p>
+    <p><strong>Phone:</strong> {{ user['phone'] or 'Not set' }}</p>
+    <p><strong>Password:</strong> <em>Hidden for security</em></p>
+  </div>
+
+  <div class="card white" style="margin-top:12px;">
+    <h4>Change Password</h4>
+    <form method="post" action="{{ url_for('change_password') }}">
+        <label>Current Password</label>
+        <div class="input-group pw-group"><i class='bx bx-lock'></i><input class="pw-input" type="password" name="current_password" required><i class='bx bx-hide pw-toggle' title="Show/Hide password" style="cursor:pointer"></i></div>
+        <label>New Password</label>
+        <div class="input-group pw-group"><i class='bx bx-lock'></i><input class="pw-input" type="password" name="new_password" required><i class='bx bx-hide pw-toggle' title="Show/Hide password" style="cursor:pointer"></i></div>
+      <button class="btn primary" type="submit">Change Password</button>
+    </form>
+  </div>
+
+  <div class="card white" style="margin-top:12px;">
+    <h4>Danger Zone</h4>
+    <p class="muted">Deleting your account will remove your profile and your complaints (images will be deleted from server).</p>
+    <form method="post" action="{{ url_for('delete_account') }}" onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');">
+      <button class="btn" type="submit">Delete Account</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="dashboard full-bleed" data-aos="fade-up">
+  <div class="container">
+    <h2>Welcome, {{ session.get('username') }}</h2>
+
+    <div class="big-cta" data-aos="zoom-in">
+      <a class="card-link" href="{{ url_for('new_complaint') }}">
+        <div class="card big-report">
+          <div class="card-icon"><i class='bx bx-camera'></i></div>
+          <div class="card-body">
+            <h3>Report Waste</h3>
+            <p class="muted">Take a photo and report</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="small-cards" style="display:flex; gap:12px; margin-top:14px; justify-content:center">
+      <a class="card-link" href="{{ url_for('my_complaints') }}">
+        <div class="card small-card" data-aos="zoom-in">
+          <div class="card-body">
+            <h3><i class='bx bx-list'></i></h3>
+            <p class="muted">My Reports</p>
+            <p class="muted stat-small">{{ total }}</p>
+          </div>
+        </div>
+      </a>
+
+      <a class="card-link" href="{{ url_for('public_reports') }}">
+        <div class="card small-card" data-aos="zoom-in">
+          <div class="card-body">
+            <h3><i class='bx bx-help-circle'></i></h3>
+            <p class="muted">Help & Tips</p>
+            <p class="muted stat-small">&nbsp;</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <h3 style="margin-top:20px">Your Impact</h3>
+    <div class="impact-cards" style="display:flex; gap:12px; margin-top:8px">
+      <div class="card stat-card flag" data-aos="fade-up">
+        <div class="card-icon"><i class='bx bx-flag'></i></div>
+        <div class="card-body">
+          <p class="stat">{{ total }}</p>
+          <p class="muted">Reported</p>
+        </div>
+      </div>
+
+      <div class="card stat-card inprogress" data-aos="fade-up">
+        <div class="card-icon"><i class='bx bx-wrench'></i></div>
+        <div class="card-body">
+          <p class="stat">{{ in_progress }}</p>
+          <p class="muted">In Progress</p>
+        </div>
+      </div>
+
+      <div class="card stat-card completed" data-aos="fade-up">
+        <div class="card-icon"><i class='bx bx-check'></i></div>
+        <div class="card-body">
+          <p class="stat">{{ completed }}</p>
+          <p class="muted">Completed</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-tips" style="margin-top:18px">
+      <div class="card">
+        <h4>Quick Tips</h4>
+        <ul>
+          <li>Take clear photos with good lighting for better identification</li>
+          <li>Enable location services for accurate waste location tracking</li>
+          <li>Report immediately for faster cleanup response times</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="logout-wrapper">
+      <form method="get" action="{{ url_for('logout') }}">
+        <button type="submit" class="btn logout">Logout</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

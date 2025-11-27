@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<section data-aos="fade-up">
+  <h2>Complaint #{{ complaint['id'] }}</h2>
+  <div class="info-box">
+    <ul>
+      <li><i class="bx bx-shield"></i> Your report will be sent to local authorities immediately</li>
+      <li><i class="bx bx-current-location"></i> Your location is automatically detected for accurate reporting</li>
+      <li><i class="bx bx-list-check"></i> You can track the progress of your report in 'My Reports'</li>
+    </ul>
+  </div>
+  <div class="detail-grid">
+    <div class="card white">
+      <h4>Before Image</h4>
+      {% if complaint['image_before_path'] %}
+        <img src="/{{ complaint['image_before_path'] }}" alt="before" class="preview">
+      {% else %}
+        <p class="muted">Not provided</p>
+      {% endif %}
+    </div>
+
+    <div class="card white">
+      <h4>After Image</h4>
+      {% if complaint['image_after_path'] %}
+        <img src="/{{ complaint['image_after_path'] }}" alt="after" class="preview">
+      {% else %}
+        <p class="muted">Not yet available</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card white">
+    <h4>Description</h4>
+    <p>{{ complaint['description'] }}</p>
+    <p><strong>Status:</strong> <span class="badge {{ complaint['status']|lower|replace(' ', '-') }}">{{ complaint['status'] }}</span></p>
+    <p><strong>Reported by:</strong> {{ complaint['reporter'] }}</p>
+    <p><strong>Coordinates:</strong>
+      {% if complaint['latitude'] and complaint['longitude'] %}
+        {{ complaint['latitude'] }}, {{ complaint['longitude'] }} - <a href="https://www.google.com/maps?q={{ complaint['latitude'] }},{{ complaint['longitude'] }}" target="_blank">Open in Google Maps</a>
+      {% else %}
+        Not provided
+      {% endif %}
+    </p>
+    <p><small>Created at: {{ complaint['created_at'] }} | Updated: {{ complaint['updated_at'] }}</small></p>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="full-bleed report-page" data-aos="fade-up">
+  <div class="form-section-inner">
+    <div class="report-header">
+      <a href="{{ url_for('user_dashboard') }}" class="back-link"><i class='bx bx-arrow-back'></i></a>
+      <h2>Report Waste</h2>
+      <div class="profile-placeholder"></div>
+    </div>
+
+    <form method="post" action="{{ url_for('create_complaint') }}" enctype="multipart/form-data">
+      <div class="section">
+        <label class="section-title">Location</label>
+        <div class="location-card">
+          <div class="loc-left"><i class='bx bx-map-pin'></i><div class="loc-text">Current Location</div></div>
+          <div class="loc-right"><button type="button" class="btn ghost" id="getLocationBtn"><i class='bx bx-refresh'></i></button></div>
+        </div>
+        <div id="coordsDisplay" class="muted" style="margin-top:8px;">Location not set</div>
+      </div>
+
+      <div class="section">
+        <label class="section-title">Photo Evidence</label>
+        <div class="photo-card" id="photoCard" data-target="before" role="button" aria-label="Add photo evidence">
+          <div class="photo-placeholder" id="photoPlaceholder">
+            <i class='bx bx-camera'></i>
+            <div class="photo-text">Tap to add photo</div>
+          </div>
+          <img id="beforePreview" class="photo-preview" alt="Preview" style="display:none;" />
+        </div>
+        <div class="photo-actions" style="display:flex; gap:8px; margin-top:8px;">
+          <button type="button" class="btn ghost" id="useCameraBtn"><i class='bx bx-camera'></i> Use Camera</button>
+          <button type="button" class="btn ghost" id="chooseFileBtn"><i class='bx bx-folder-open'></i> Choose File</button>
+        </div>
+        <input type="file" name="image_before" id="image_before" accept="image/*" capture="environment" style="display:none">
+      </div>
+
+      <div class="section">
+        <label class="section-title">Description (Optional)</label>
+        <textarea name="description" class="desc" placeholder="Describe the waste (type, size, hazards, etc.)"></textarea>
+      </div>
+
+      <div class="section">
+        <button class="btn submit-btn" type="submit">Submit Report</button>
+      </div>
+
+      <div class="info-box">
+        <ul>
+          <li>Your report will be sent to local authorities immediately</li>
+          <li>Your location is automatically detected for accurate reporting</li>
+          <li>You can track the progress of your report in 'My Reports'</li>
+        </ul>
+      </div>
+
+      <input type="hidden" name="latitude" id="latitude">
+      <input type="hidden" name="longitude" id="longitude">
+    </form>
+  </div>
+</section>
+{% endblock %}

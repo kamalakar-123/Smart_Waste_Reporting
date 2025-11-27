@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<section data-aos="fade-up">
+  <h2>Open Complaints</h2>
+  <table class="table">
+    <thead>
+      <tr><th>ID</th><th>Reporter</th><th>Description</th><th>Location</th><th>Status</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      {% for c in complaints %}
+      <tr>
+        <td>{{ c['id'] }}</td>
+        <td>{{ c['reporter'] }}</td>
+        <td>{{ c['description']|truncate(60) }}</td>
+        <td>
+          {% if c['latitude'] and c['longitude'] %}
+            <a href="https://www.google.com/maps?q={{ c['latitude'] }},{{ c['longitude'] }}" target="_blank">Open</a>
+          {% else %}
+            N/A
+          {% endif %}
+        </td>
+        <td><span class="badge {{ c['status']|lower|replace(' ', '-') }}">{{ c['status'] }}</span></td>
+        <td><a class="btn small" href="{{ url_for('worker_complaint_view', cid=c['id']) }}">View / Update</a></td>
+      </tr>
+      {% else %}
+        <tr><td colspan="6">No open complaints.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

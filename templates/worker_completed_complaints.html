@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+<section data-aos="fade-up">
+  <h2>Completed Complaints (by you)</h2>
+  <table class="table">
+    <thead>
+      <tr><th>ID</th><th>Reporter</th><th>Description</th><th>Before</th><th>After</th><th>Updated</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      {% for c in complaints %}
+      <tr>
+        <td>{{ c['id'] }}</td>
+        <td>{{ c['reporter'] }}</td>
+        <td>{{ c['description']|truncate(60) }}</td>
+        <td>
+          {% if c['image_before_path'] %}
+            <img src="/{{ c['image_before_path'] }}" style="height:60px; object-fit:cover; border-radius:4px">
+          {% else %}
+            <span class="muted">N/A</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if c['image_after_path'] %}
+            <img src="/{{ c['image_after_path'] }}" style="height:60px; object-fit:cover; border-radius:4px">
+          {% else %}
+            <span class="muted">N/A</span>
+          {% endif %}
+        </td>
+        <td>{{ c['updated_at'] }}</td>
+        <td><a class="btn small" href="{{ url_for('worker_complaint_view', cid=c['id']) }}">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">No completed complaints found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
