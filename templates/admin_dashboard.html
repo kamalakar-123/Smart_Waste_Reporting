@@ -1,0 +1,695 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="dashboard full-bleed" data-aos="fade-up">
+  <div class="container">
+    <h2>Admin Dashboard</h2>
+    <p class="muted">Welcome, {{ session.get('username') }}</p>
+
+    <h3 style="margin-top:20px">System Overview</h3>
+    <div class="impact-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:12px">
+      <div class="card stat-card" data-aos="fade-up">
+        <div class="card-icon" style="color:#3aa0ff"><i class='bx bx-user'></i></div>
+        <div class="card-body">
+          <p class="stat">{{ total_users }}</p>
+          <p class="muted">Total Users</p>
+        </div>
+      </div>
+
+      <div class="card stat-card" data-aos="fade-up">
+        <div class="card-icon" style="color:#9b59b6"><i class='bx bx-hard-hat'></i></div>
+        <div class="card-body">
+          <p class="stat">{{ total_workers }}</p>
+          <p class="muted">Total Workers</p>
+        </div>
+      </div>
+
+      <div class="card stat-card" data-aos="fade-up">
+        <div class="card-icon" style="color:#e74c3c"><i class='bx bx-file'></i></div>
+        <div class="card-body">
+          <p class="stat">{{ total_complaints }}</p>
+          <p class="muted">Total Reports</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">Complaints Status</h3>
+    <div class="impact-cards" style="display:flex; gap:12px; margin-top:8px">
+      <div class="card stat-card" data-aos="fade-up">
+        <div class="card-icon" style="color:#ff8a3d"><i class='bx bx-time'></i></div>
+        <div class="card-body">
+          <p class="stat">{{ pending }}</p>
+          <p class="muted">Pending</p>
+        </div>
+      </div>
+
+      <div class="card stat-card inprogress" data-aos="fade-up">
+        <div class="card-icon"><i class='bx bx-wrench'></i></div>
+        <div class="card-body">
+          <p class="stat">{{ in_progress }}</p>
+          <p class="muted">In Progress</p>
+        </div>
+      </div>
+
+      <div class="card stat-card completed" data-aos="fade-up">
+        <div class="card-icon"><i class='bx bx-check'></i></div>
+        <div class="card-body">
+          <p class="stat">{{ completed }}</p>
+          <p class="muted">Completed</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">Quick Actions</h3>
+    <div class="small-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-top:12px">
+      <a class="card-link" href="{{ url_for('public_reports') }}">
+        <div class="card small-card" data-aos="zoom-in" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+          <div class="card-body">
+            <h3 style="color:white"><i class='bx bx-list-ul'></i></h3>
+            <p style="color:rgba(255,255,255,0.95); font-weight:600">View All Reports</p>
+          </div>
+        </div>
+      </a>
+
+      <a class="card-link" href="{{ url_for('profile') }}">
+        <div class="card small-card" data-aos="zoom-in" style="background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
+          <div class="card-body">
+            <h3 style="color:white"><i class='bx bx-user-circle'></i></h3>
+            <p style="color:rgba(255,255,255,0.95); font-weight:600">My Profile</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Worker Management Section -->
+    <h3 style="margin-top:32px">👷 Worker Management</h3>
+    
+    <!-- Add Worker Button -->
+    <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+      <button id="addWorkerBtn" class="btn primary" style="display:flex; align-items:center; gap:8px;">
+        <i class='bx bx-plus'></i> Add New Worker
+      </button>
+    </div>
+
+    <!-- Add Worker Modal -->
+    <div id="addWorkerModal" class="modal" style="display:none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Add New Worker</h3>
+          <span class="close" id="closeAddModal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="addWorkerForm">
+            <label>Worker Name *</label>
+            <input type="text" id="workerName" required placeholder="Enter worker's full name">
+
+            <label>Email Address *</label>
+            <input type="email" id="workerEmail" required placeholder="worker@example.com">
+
+            <label>Phone Number</label>
+            <input type="text" id="workerPhone" placeholder="Optional">
+
+            <label>Password *</label>
+            <input type="password" id="workerPassword" required minlength="6" placeholder="Minimum 6 characters">
+
+            <label>Confirm Password *</label>
+            <input type="password" id="workerConfirmPassword" required placeholder="Re-enter password">
+
+            <div id="addWorkerMessage" style="margin-top:10px; padding:10px; border-radius:6px; display:none;"></div>
+
+            <div style="display:flex; gap:12px; margin-top:20px;">
+              <button type="submit" class="btn primary" id="submitWorkerBtn">Create Worker Account</button>
+              <button type="button" class="btn btn-outline" id="cancelAddBtn">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workers List -->
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h4 style="margin:0;">Active Workers</h4>
+        <span id="workerCount" class="muted">Loading...</span>
+      </div>
+      
+      <div id="workersListContainer">
+        <p class="muted" style="text-align:center; padding:20px;">Loading workers...</p>
+      </div>
+    </div>
+
+    <div class="quick-tips" style="margin-top:24px">
+      <div class="card">
+        <h4>Admin Notes</h4>
+        <ul>
+          <li>Monitor complaint resolution times and worker performance</li>
+          <li>Ensure timely assignment of pending complaints to workers</li>
+          <li>Review user feedback and system usage patterns regularly</li>
+          <li>Maintain system security and user data privacy</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="logout-wrapper">
+      <form method="get" action="{{ url_for('logout') }}">
+        <button type="submit" class="btn logout">Logout</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Toast Notification Container -->
+<div id="toastContainer"></div>
+
+<script>
+// Toast Notification System
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+  
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-message">${message}</div>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Trigger animation
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 10);
+  
+  // Remove after 4 seconds
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      container.removeChild(toast);
+    }, 300);
+  }, 4000);
+}
+
+// Worker Management JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+  const addWorkerBtn = document.getElementById('addWorkerBtn');
+  const addWorkerModal = document.getElementById('addWorkerModal');
+  const closeAddModal = document.getElementById('closeAddModal');
+  const cancelAddBtn = document.getElementById('cancelAddBtn');
+  const addWorkerForm = document.getElementById('addWorkerForm');
+  const addWorkerMessage = document.getElementById('addWorkerMessage');
+
+  // Load workers on page load
+  loadWorkers();
+
+  // Open add worker modal
+  addWorkerBtn.addEventListener('click', () => {
+    addWorkerModal.style.display = 'block';
+    addWorkerForm.reset();
+    addWorkerMessage.style.display = 'none';
+  });
+
+  // Close modal handlers
+  closeAddModal.addEventListener('click', () => {
+    addWorkerModal.style.display = 'none';
+  });
+
+  cancelAddBtn.addEventListener('click', () => {
+    addWorkerModal.style.display = 'none';
+  });
+
+  // Close modal when clicking outside
+  window.addEventListener('click', (e) => {
+    if (e.target === addWorkerModal) {
+      addWorkerModal.style.display = 'none';
+    }
+  });
+
+  // Handle add worker form submission
+  addWorkerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('workerName').value.trim();
+    const email = document.getElementById('workerEmail').value.trim();
+    const phone = document.getElementById('workerPhone').value.trim();
+    const password = document.getElementById('workerPassword').value;
+    const confirmPassword = document.getElementById('workerConfirmPassword').value;
+
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      showMessage('Passwords do not match', 'error');
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      showMessage('Password must be at least 6 characters', 'error');
+      return;
+    }
+
+    const submitBtn = document.getElementById('submitWorkerBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating...';
+
+    try {
+      const response = await fetch('/api/admin/add-worker', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          phone: phone,
+          password: password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Show success toast
+        showToast(`✨ Worker "${name}" has been added successfully!`, 'success');
+        addWorkerModal.style.display = 'none';
+        loadWorkers(); // Reload workers list
+        addWorkerForm.reset();
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Worker Account';
+      } else {
+        showToast(data.message || 'Failed to create worker', 'error');
+        showMessage(data.message || 'Failed to create worker', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Worker Account';
+      }
+    } catch (error) {
+      console.error('Add worker error:', error);
+      showToast('An error occurred while creating worker', 'error');
+      showMessage('Error creating worker account', 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Create Worker Account';
+    }
+  });
+
+  function showMessage(message, type) {
+    addWorkerMessage.textContent = message;
+    addWorkerMessage.style.display = 'block';
+    
+    if (type === 'success') {
+      addWorkerMessage.style.background = '#d4edda';
+      addWorkerMessage.style.color = '#155724';
+    } else {
+      addWorkerMessage.style.background = '#f8d7da';
+      addWorkerMessage.style.color = '#721c24';
+    }
+  }
+
+  // Load workers list
+  async function loadWorkers() {
+    const container = document.getElementById('workersListContainer');
+    const workerCount = document.getElementById('workerCount');
+    
+    try {
+      const response = await fetch('/api/admin/workers');
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const workers = data.workers;
+        workerCount.textContent = `${workers.length} worker${workers.length !== 1 ? 's' : ''}`;
+
+        if (workers.length === 0) {
+          container.innerHTML = '<p class="muted" style="text-align:center; padding:20px;">No workers found. Click "Add New Worker" to create one.</p>';
+          return;
+        }
+
+        let html = '<div class="workers-table">';
+        html += '<table class="table">';
+        html += '<thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Completed Tasks</th><th>Joined</th><th>Actions</th></tr></thead>';
+        html += '<tbody>';
+
+        workers.forEach(worker => {
+          const joinDate = new Date(worker.created_at).toLocaleDateString();
+          html += `
+            <tr>
+              <td><strong>${worker.name}</strong></td>
+              <td>${worker.email}</td>
+              <td>${worker.phone}</td>
+              <td style="text-align:center;">${worker.completed_tasks}</td>
+              <td>${joinDate}</td>
+              <td>
+                <button class="btn btn-small" style="background:#e74c3c; color:white; border:none;" onclick="removeWorker(${worker.id}, '${worker.name}')">
+                  <i class='bx bx-trash'></i> Remove
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = '<p class="muted" style="text-align:center; padding:20px; color:#e74c3c;">Error loading workers</p>';
+      }
+    } catch (error) {
+      console.error('Load workers error:', error);
+      container.innerHTML = '<p class="muted" style="text-align:center; padding:20px; color:#e74c3c;">Error loading workers</p>';
+    }
+  }
+
+  // Make removeWorker function global
+  window.removeWorker = async function(workerId, workerName) {
+    // Create custom confirmation modal
+    const confirmModal = document.createElement('div');
+    confirmModal.className = 'custom-confirm-overlay';
+    confirmModal.innerHTML = `
+      <div class="custom-confirm-modal">
+        <div class="custom-confirm-icon">⚠️</div>
+        <h3>Remove Worker?</h3>
+        <p>Are you sure you want to remove <strong>${workerName}</strong>?</p>
+        <p class="custom-confirm-warning">This will delete their account and remove all authentication access. This action cannot be undone.</p>
+        <div class="custom-confirm-buttons">
+          <button class="btn btn-cancel" onclick="this.closest('.custom-confirm-overlay').remove()">Cancel</button>
+          <button class="btn btn-confirm-danger" id="confirmRemoveBtn">Remove Worker</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(confirmModal);
+    
+    // Show with animation
+    setTimeout(() => {
+      confirmModal.classList.add('show');
+    }, 10);
+    
+    // Handle confirm button
+    document.getElementById('confirmRemoveBtn').onclick = async function() {
+      this.disabled = true;
+      this.textContent = 'Removing...';
+      
+      try {
+        const response = await fetch(`/api/admin/remove-worker/${workerId}`, {
+          method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Close confirmation modal
+          confirmModal.classList.remove('show');
+          setTimeout(() => {
+            confirmModal.remove();
+          }, 300);
+          
+          // Show success toast
+          showToast(`🗑️ Worker "${workerName}" has been removed successfully`, 'success');
+          loadWorkers(); // Reload the list
+        } else {
+          showToast(data.message || 'Failed to remove worker', 'error');
+          this.disabled = false;
+          this.textContent = 'Remove Worker';
+        }
+      } catch (error) {
+        console.error('Remove worker error:', error);
+        showToast('An error occurred while removing worker', 'error');
+        this.disabled = false;
+        this.textContent = 'Remove Worker';
+      }
+    };
+  };
+});
+</script>
+
+<style>
+/* Toast Notification Styles */
+#toastContainer {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  width: 100%;
+  max-width: 500px;
+  padding: 0 20px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 300px;
+  opacity: 0;
+  transform: translateY(-100px);
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  pointer-events: auto;
+  border-left: 4px solid;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-success {
+  border-left-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.toast-error {
+  border-left-color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.toast-icon {
+  font-size: 24px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.toast-success .toast-icon {
+  background: #10b981;
+  color: white;
+}
+
+.toast-error .toast-icon {
+  background: #ef4444;
+  color: white;
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+/* Custom Confirmation Modal */
+.custom-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.custom-confirm-overlay.show {
+  opacity: 1;
+}
+
+.custom-confirm-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.custom-confirm-overlay.show .custom-confirm-modal {
+  transform: scale(1);
+}
+
+.custom-confirm-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  animation: bounce 0.6s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.custom-confirm-modal h3 {
+  font-size: 24px;
+  margin-bottom: 12px;
+  color: #1f2937;
+}
+
+.custom-confirm-modal p {
+  font-size: 16px;
+  color: #6b7280;
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.custom-confirm-warning {
+  font-size: 14px !important;
+  color: #ef4444 !important;
+  font-weight: 500;
+  margin-top: 12px !important;
+  margin-bottom: 24px !important;
+}
+
+.custom-confirm-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.btn-cancel {
+  background: #e5e7eb;
+  color: #374151;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #d1d5db;
+}
+
+.btn-confirm-danger {
+  background: #ef4444;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm-danger:hover {
+  background: #dc2626;
+}
+
+.btn-confirm-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.6);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 5% auto;
+  padding: 0;
+  border: 1px solid #888;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  padding: 20px;
+  background: var(--primary);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.close {
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 20px;
+}
+
+.close:hover {
+  opacity: 0.8;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-body label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.modal-body input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.workers-table {
+  overflow-x: auto;
+}
+
+.workers-table table {
+  width: 100%;
+  min-width: 700px;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    margin: 10% auto;
+  }
+}
+</style>
+
+{% endblock %}

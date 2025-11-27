@@ -1,10 +1,21 @@
 import os
 import sqlite3
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, session, flash, g, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, flash, g, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db, init_db, close_connection
+from admin_config import is_admin_email, get_user_role
+
+# Import Firebase admin config (optional - will work without it)
+try:
+    from firebase_admin_config import verify_firebase_token
+    FIREBASE_ENABLED = True
+except Exception as e:
+    print(f"Firebase Admin not available: {e}")
+    FIREBASE_ENABLED = False
+    def verify_firebase_token(token):
+        return None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
@@ -89,12 +100,53 @@ def get_worker_counts(worker_id):
     return open_count, completed
 
 
+def get_admin_stats():
+    db = get_db()
+    cur = db.cursor()
+    
+    # Total complaints
+    cur.execute('SELECT COUNT(*) FROM complaints')
+    total_complaints = cur.fetchone()[0]
+    
+    # Total users (excluding workers and admins)
+    cur.execute('SELECT COUNT(*) FROM users WHERE role="user"')
+    total_users = cur.fetchone()[0]
+    
+    # Total workers
+    cur.execute('SELECT COUNT(*) FROM users WHERE role="worker"')
+    total_workers = cur.fetchone()[0]
+    
+    # Pending complaints
+    cur.execute('SELECT COUNT(*) FROM complaints WHERE status="Pending"')
+    pending = cur.fetchone()[0]
+    
+    # In Progress complaints
+    cur.execute('SELECT COUNT(*) FROM complaints WHERE status IN ("Accepted", "In Progress")')
+    in_progress = cur.fetchone()[0]
+    
+    # Completed complaints
+    cur.execute('SELECT COUNT(*) FROM complaints WHERE status="Completed"')
+    completed = cur.fetchone()[0]
+    
+    return {
+        'total_complaints': total_complaints,
+        'total_users': total_users,
+        'total_workers': total_workers,
+        'pending': pending,
+        'in_progress': in_progress,
+        'completed': completed
+    }
+
+
 @app.route('/')
 def index():
     if 'user_id' in session:
-        if session.get('role') == 'worker':
+        if session.get('role') == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        elif session.get('role') == 'worker':
             return redirect(url_for('worker_dashboard'))
-        return redirect(url_for('user_dashboard'))
+        else:
+            return redirect(url_for('user_dashboard'))
     return redirect(url_for('login'))
 
 
@@ -106,9 +158,9 @@ def register():
         phone = request.form.get('phone')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
-        role = request.form.get('role')
+        role = 'user'  # Default role for all new registrations
 
-        if not (username and email and password and role):
+        if not (username and email and password):
             flash('Please fill all required fields.', 'warning')
             return render_template('register.html')
 
@@ -137,17 +189,35 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        
+        if not email or not password:
+            flash('Please enter both email and password.', 'warning')
+            return render_template('login.html')
+        
         db = get_db()
         cur = db.cursor()
         cur.execute('SELECT * FROM users WHERE email=?', (email,))
         user = cur.fetchone()
+        
+        if not user:
+            flash('Email not found. Please register first to create an account.', 'warning')
+            return render_template('login.html')
+        
         if user and check_password_hash(user['password_hash'], password):
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
-            flash('Logged in successfully.', 'success')
-            return redirect(url_for('index'))
-        flash('Invalid credentials.', 'danger')
+            flash(f'Welcome back, {user["username"]}!', 'success')
+            
+            # Redirect based on user role
+            if user['role'] == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            elif user['role'] == 'worker':
+                return redirect(url_for('worker_dashboard'))
+            else:  # Default to user dashboard
+                return redirect(url_for('user_dashboard'))
+        else:
+            flash('Incorrect password. Please try again.', 'danger')
 
     return render_template('login.html')
 
@@ -157,6 +227,394 @@ def logout():
     session.clear()
     flash('Logged out.', 'info')
     return redirect(url_for('login'))
+
+
+# Firebase Authentication API Endpoints
+@app.route('/api/firebase-register', methods=['POST'])
+def firebase_register():
+    """Handle Firebase user registration and sync with local database"""
+    try:
+        data = request.get_json()
+        id_token = data.get('idToken')
+        username = data.get('username')
+        email = data.get('email')
+        phone = data.get('phone', '')
+        firebase_uid = data.get('firebase_uid')
+        
+        if not all([id_token, username, email, firebase_uid]):
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+        
+        # Automatically determine role based on email
+        role = get_user_role(email)
+        
+        # Verify Firebase token (optional in development)
+        if FIREBASE_ENABLED:
+            try:
+                decoded_token = verify_firebase_token(id_token)
+                if decoded_token and decoded_token.get('uid') != firebase_uid:
+                    return jsonify({'success': False, 'message': 'Token UID mismatch'}), 401
+            except Exception as e:
+                print(f"Token verification warning (continuing anyway): {e}")
+                # Continue without verification in development
+        
+        # Store user in local database
+        db = get_db()
+        cur = db.cursor()
+        
+        try:
+            # Check if user already exists
+            cur.execute('SELECT id FROM users WHERE email=?', (email,))
+            existing_user = cur.fetchone()
+            
+            if existing_user:
+                return jsonify({'success': False, 'message': 'Email already registered'}), 400
+            
+            # Insert new user with Firebase UID and auto-determined role
+            cur.execute(
+                'INSERT INTO users (username, email, phone, password_hash, role, created_at, firebase_uid) VALUES (?,?,?,?,?,?,?)',
+                (username, email, phone, '', role, datetime.utcnow(), firebase_uid)
+            )
+            db.commit()
+            
+            success_message = 'Registration successful'
+            if role == 'admin':
+                success_message = 'Admin account created successfully'
+            
+            return jsonify({
+                'success': True,
+                'message': success_message,
+                'redirect_url': '/login',
+                'role': role
+            }), 200
+            
+        except sqlite3.IntegrityError as e:
+            return jsonify({'success': False, 'message': 'Email already registered'}), 400
+        except Exception as e:
+            print(f"Database error: {e}")
+            return jsonify({'success': False, 'message': 'Database error occurred'}), 500
+            
+    except Exception as e:
+        print(f"Registration error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/legacy-login', methods=['POST'])
+def legacy_login():
+    """Handle login for users registered before Firebase integration"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not all([email, password]):
+            return jsonify({'success': False, 'message': 'Missing email or password'}), 400
+        
+        # Check if user exists in database
+        db = get_db()
+        cur = db.cursor()
+        cur.execute('SELECT * FROM users WHERE email=?', (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Verify password using werkzeug
+        from werkzeug.security import check_password_hash
+        if not check_password_hash(user['password_hash'], password):
+            return jsonify({'success': False, 'message': 'Invalid password'}), 401
+        
+        # Check if user has firebase_uid (already migrated)
+        if user.get('firebase_uid'):
+            return jsonify({'success': False, 'message': 'This account has been migrated. Please use the regular login.'}), 400
+        
+        # Set session for legacy user
+        session['user_id'] = user['id']
+        session['username'] = user['username']
+        session['role'] = user['role']
+        session['needs_migration'] = True  # Flag for migration warning
+        
+        # Determine redirect URL based on role
+        if user['role'] == 'admin':
+            redirect_url = url_for('admin_dashboard')
+        elif user['role'] == 'worker':
+            redirect_url = url_for('worker_dashboard')
+        else:
+            redirect_url = url_for('user_dashboard')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Legacy login successful - migration recommended',
+            'redirect_url': redirect_url,
+            'needs_migration': True
+        }), 200
+        
+    except Exception as e:
+        print(f"Legacy login error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/firebase-login', methods=['POST'])
+def firebase_login():
+    """Handle Firebase login and sync with local session"""
+    try:
+        data = request.get_json()
+        id_token = data.get('idToken')
+        email = data.get('email')
+        is_google_auth = data.get('is_google_auth', False)
+        username = data.get('username')
+        firebase_uid = data.get('firebase_uid')
+        
+        if not all([id_token, email]):
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+        
+        # Verify Firebase token (optional in development)
+        decoded_token = None
+        if FIREBASE_ENABLED:
+            try:
+                decoded_token = verify_firebase_token(id_token)
+            except Exception as e:
+                print(f"Token verification warning (continuing anyway): {e}")
+                # Continue without verification in development
+        
+        # Get or create user in local database
+        db = get_db()
+        cur = db.cursor()
+        cur.execute('SELECT * FROM users WHERE email=?', (email,))
+        user = cur.fetchone()
+        
+        # Determine the correct role based on email
+        correct_role = get_user_role(email)
+        
+        # If user doesn't exist and it's Google auth, create the user
+        if not user and is_google_auth:
+            try:
+                cur.execute(
+                    'INSERT INTO users (username, email, phone, password_hash, role, created_at, firebase_uid) VALUES (?,?,?,?,?,?,?)',
+                    (username or email.split('@')[0], email, '', '', correct_role, datetime.utcnow(), firebase_uid)
+                )
+                db.commit()
+                
+                # Fetch the newly created user
+                cur.execute('SELECT * FROM users WHERE email=?', (email,))
+                user = cur.fetchone()
+            except Exception as e:
+                print(f"Error creating Google user: {e}")
+                return jsonify({'success': False, 'message': 'Failed to create user account'}), 500
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'Email not found. Please register first.'}), 404
+        
+        # Update role if it doesn't match the admin list
+        if user['role'] != correct_role:
+            try:
+                cur.execute('UPDATE users SET role=? WHERE id=?', (correct_role, user['id']))
+                db.commit()
+                # Update the user dict
+                user = dict(user)
+                user['role'] = correct_role
+            except Exception as e:
+                print(f"Error updating user role: {e}")
+        
+        # Update Firebase UID if not set
+        if firebase_uid and not user.get('firebase_uid'):
+            try:
+                cur.execute('UPDATE users SET firebase_uid=? WHERE id=?', (firebase_uid, user['id']))
+                db.commit()
+            except Exception as e:
+                print(f"Error updating Firebase UID: {e}")
+        
+        # Set session with the correct role
+        session['user_id'] = user['id']
+        session['username'] = user['username']
+        session['role'] = user['role']
+        
+        # Determine redirect URL based on role
+        if user['role'] == 'admin':
+            redirect_url = url_for('admin_dashboard')
+        elif user['role'] == 'worker':
+            redirect_url = url_for('worker_dashboard')
+        else:
+            redirect_url = url_for('user_dashboard')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Login successful',
+            'redirect_url': redirect_url,
+            'user': {
+                'id': user['id'],
+                'username': user['username'],
+                'email': user['email'],
+                'role': user['role']
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"Login error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# Worker Management API Endpoints (Admin Only)
+@app.route('/api/admin/add-worker', methods=['POST'])
+@login_required
+def add_worker():
+    """Admin endpoint to create a new worker account"""
+    # Verify admin role
+    if session.get('role') != 'admin':
+        return jsonify({'success': False, 'message': 'Unauthorized. Admin access required.'}), 403
+    
+    try:
+        data = request.get_json()
+        worker_name = data.get('name')
+        worker_email = data.get('email')
+        worker_password = data.get('password')
+        worker_phone = data.get('phone', '')
+        
+        if not all([worker_name, worker_email, worker_password]):
+            return jsonify({'success': False, 'message': 'Name, email, and password are required'}), 400
+        
+        # Validate email format
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, worker_email):
+            return jsonify({'success': False, 'message': 'Invalid email format'}), 400
+        
+        # Check if email already exists
+        db = get_db()
+        cur = db.cursor()
+        cur.execute('SELECT id FROM users WHERE email=?', (worker_email,))
+        existing_user = cur.fetchone()
+        
+        if existing_user:
+            return jsonify({'success': False, 'message': 'Email already exists in the system'}), 400
+        
+        # Hash password for local storage (backup)
+        password_hash = generate_password_hash(worker_password)
+        
+        # Create worker in local database
+        try:
+            cur.execute(
+                'INSERT INTO users (username, email, phone, password_hash, role, created_at) VALUES (?,?,?,?,?,?)',
+                (worker_name, worker_email, worker_phone, password_hash, 'worker', datetime.utcnow())
+            )
+            db.commit()
+            worker_id = cur.lastrowid
+            
+            return jsonify({
+                'success': True,
+                'message': f'Worker account created successfully for {worker_name}',
+                'worker': {
+                    'id': worker_id,
+                    'name': worker_name,
+                    'email': worker_email,
+                    'phone': worker_phone
+                }
+            }), 200
+            
+        except sqlite3.IntegrityError:
+            return jsonify({'success': False, 'message': 'Email already registered'}), 400
+            
+    except Exception as e:
+        print(f"Add worker error: {e}")
+        return jsonify({'success': False, 'message': f'Error creating worker: {str(e)}'}), 500
+
+
+@app.route('/api/admin/workers', methods=['GET'])
+@login_required
+def get_workers():
+    """Admin endpoint to get list of all workers"""
+    # Verify admin role
+    if session.get('role') != 'admin':
+        return jsonify({'success': False, 'message': 'Unauthorized. Admin access required.'}), 403
+    
+    try:
+        db = get_db()
+        cur = db.cursor()
+        cur.execute('''
+            SELECT u.id, u.username, u.email, u.phone, u.created_at,
+                   COUNT(DISTINCT c.id) as total_completed
+            FROM users u
+            LEFT JOIN complaints c ON u.id = c.worker_id AND c.status = 'Completed'
+            WHERE u.role = 'worker'
+            GROUP BY u.id
+            ORDER BY u.created_at DESC
+        ''')
+        workers = cur.fetchall()
+        
+        workers_list = []
+        for worker in workers:
+            workers_list.append({
+                'id': worker['id'],
+                'name': worker['username'],
+                'email': worker['email'],
+                'phone': worker['phone'] or 'N/A',
+                'created_at': worker['created_at'],
+                'completed_tasks': worker['total_completed']
+            })
+        
+        return jsonify({
+            'success': True,
+            'workers': workers_list,
+            'total': len(workers_list)
+        }), 200
+        
+    except Exception as e:
+        print(f"Get workers error: {e}")
+        return jsonify({'success': False, 'message': f'Error fetching workers: {str(e)}'}), 500
+
+
+@app.route('/api/admin/remove-worker/<int:worker_id>', methods=['DELETE'])
+@login_required
+def remove_worker(worker_id):
+    """Admin endpoint to remove a worker account"""
+    # Verify admin role
+    if session.get('role') != 'admin':
+        return jsonify({'success': False, 'message': 'Unauthorized. Admin access required.'}), 403
+    
+    try:
+        db = get_db()
+        cur = db.cursor()
+        
+        # Check if worker exists and is actually a worker (without firebase_uid to avoid column error)
+        cur.execute('SELECT id, username, email, role FROM users WHERE id=?', (worker_id,))
+        worker = cur.fetchone()
+        
+        if not worker:
+            return jsonify({'success': False, 'message': 'Worker not found'}), 404
+        
+        if worker['role'] != 'worker':
+            return jsonify({'success': False, 'message': 'User is not a worker'}), 400
+        
+        # Check if worker has any assigned complaints
+        try:
+            cur.execute('SELECT COUNT(*) as count FROM complaints WHERE worker_id=? AND status != "Completed"', (worker_id,))
+            result = cur.fetchone()
+            active_complaints = result['count'] if result else 0
+        except Exception as e:
+            print(f"Error checking complaints: {e}")
+            active_complaints = 0
+        
+        if active_complaints > 0:
+            return jsonify({
+                'success': False, 
+                'message': f'Cannot remove worker. They have {active_complaints} active complaint(s). Please reassign or complete them first.'
+            }), 400
+        
+        # Delete worker from database
+        cur.execute('DELETE FROM users WHERE id=?', (worker_id,))
+        db.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Worker {worker["username"]} has been removed successfully'
+        }), 200
+        
+    except Exception as e:
+        print(f"Remove worker error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error removing worker: {str(e)}'}), 500
 
 
 @app.route('/user/dashboard')
@@ -269,6 +727,14 @@ def worker_dashboard():
     worker_id = session['user_id']
     open_count, completed = get_worker_counts(worker_id)
     return render_template('worker_dashboard.html', open_count=open_count, completed=completed)
+
+
+@app.route('/admin/dashboard')
+@login_required
+@role_required('admin')
+def admin_dashboard():
+    stats = get_admin_stats()
+    return render_template('admin_dashboard.html', **stats)
 
 
 @app.route('/profile')

@@ -36,7 +36,8 @@ def init_db():
         phone TEXT,
         password_hash TEXT NOT NULL,
         role TEXT NOT NULL,
-        created_at TEXT
+        created_at TEXT,
+        firebase_uid TEXT UNIQUE
     );
     ''')
 

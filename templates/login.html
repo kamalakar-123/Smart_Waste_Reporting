@@ -2,14 +2,128 @@
 {% block content %}
 <section class="auth-section" data-aos="fade-up">
   <h2>Login</h2>
-  <form method="post" action="{{ url_for('login') }}">
+  <form id="loginForm">
     <label>Email</label>
-    <div class="input-group"><i class='bx bx-envelope'></i><input type="email" name="email" required></div>
+    <div class="input-group"><i class='bx bx-envelope'></i><input type="email" id="email" name="email" required></div>
 
     <label>Password</label>
-    <div class="input-group pw-group"><i class='bx bx-lock'></i><input class="pw-input" type="password" name="password" required><i class='bx bx-hide pw-toggle' title="Show/Hide password" style="cursor:pointer"></i></div>
+    <div class="input-group pw-group"><i class='bx bx-lock'></i><input class="pw-input" type="password" id="password" name="password" required><i class='bx bx-hide pw-toggle' title="Show/Hide password" style="cursor:pointer"></i></div>
 
-    <button class="btn primary" type="submit">Login</button>
+    <button class="btn primary" type="submit" id="loginBtn">Login</button>
   </form>
+
+  <div style="margin-top: 20px; text-align: center;">
+    <p style="color: #666; margin: 10px 0;">OR</p>
+    <button class="btn btn-outline" id="googleLoginBtn" type="button" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: white; color: #333; border: 1px solid #ddd;">
+      <i class='bx bxl-google'></i> Sign in with Google
+    </button>
+  </div>
+
+  <div id="authMessage" style="margin-top: 15px; padding: 10px; border-radius: 6px; display: none;"></div>
 </section>
+
+<script type="module">
+  import { loginWithEmail, loginWithGoogle } from '/static/js/auth.js';
+
+  const loginForm = document.getElementById('loginForm');
+  const googleLoginBtn = document.getElementById('googleLoginBtn');
+  const authMessage = document.getElementById('authMessage');
+  const loginBtn = document.getElementById('loginBtn');
+
+  function showMessage(message, type) {
+    authMessage.textContent = message;
+    authMessage.style.display = 'block';
+    authMessage.className = '';
+    
+    if (type === 'success') {
+      authMessage.style.background = '#d4edda';
+      authMessage.style.color = '#155724';
+    } else if (type === 'error') {
+      authMessage.style.background = '#f8d7da';
+      authMessage.style.color = '#721c24';
+    } else {
+      authMessage.style.background = '#fff3cd';
+      authMessage.style.color = '#856404';
+    }
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Logging in...';
+    
+    const result = await loginWithEmail(email, password);
+    
+    if (result.success) {
+      // Show role-specific message
+      let message = 'Login successful! Redirecting...';
+      if (result.data && result.data.user && result.data.user.role === 'admin') {
+        message = '👑 Welcome Admin! Redirecting to dashboard...';
+      } else if (result.data && result.data.user && result.data.user.role === 'worker') {
+        message = '🔧 Welcome Worker! Redirecting to dashboard...';
+      }
+      showMessage(message, 'success');
+      setTimeout(() => {
+        window.location.href = result.data.redirect_url || '/';
+      }, 1000);
+    } else {
+      // Check if this might be a legacy user (registered before Firebase)
+      if (result.error && result.error.includes('Invalid email or password')) {
+        try {
+          // Try legacy login for users registered before Firebase integration
+          const legacyResponse = await fetch('/api/legacy-login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+          });
+          
+          const legacyData = await legacyResponse.json();
+          
+          if (legacyData.success) {
+            showMessage('⚠️ Legacy account detected. Logging in...', 'success');
+            setTimeout(() => {
+              window.location.href = legacyData.redirect_url;
+            }, 1000);
+            return;
+          }
+        } catch (legacyError) {
+          console.error('Legacy login check failed:', legacyError);
+        }
+      }
+      
+      showMessage(result.error, 'error');
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Login';
+    }
+  });
+
+  googleLoginBtn.addEventListener('click', async () => {
+    googleLoginBtn.disabled = true;
+    googleLoginBtn.textContent = 'Signing in...';
+    
+    const result = await loginWithGoogle();
+    
+    if (result.success) {
+      // Show role-specific message for Google login
+      let message = 'Login successful! Redirecting...';
+      if (result.data && result.data.user && result.data.user.role === 'admin') {
+        message = '👑 Welcome Admin! Redirecting to dashboard...';
+      }
+      showMessage(message, 'success');
+      setTimeout(() => {
+        window.location.href = result.data.redirect_url || '/';
+      }, 1000);
+    } else {
+      showMessage(result.error, 'error');
+      googleLoginBtn.disabled = false;
+      googleLoginBtn.innerHTML = '<i class="bx bxl-google"></i> Sign in with Google';
+    }
+  });
+</script>
 {% endblock %}

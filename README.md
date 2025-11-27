@@ -1,13 +1,20 @@
 🌱 Smart Waste Reporting System
 
-A mini full-stack project built using Flask, SQLite, HTML/CSS/JS, with AOS animations, Boxicons, geolocation support, and image uploads.
+A full-stack project built using Flask, SQLite, HTML/CSS/JS, with Firebase Authentication, AOS animations, Boxicons, geolocation support, and image uploads.
 
 This system enables users to report waste in their area and workers to manage, update, and complete these reports. A public dashboard displays verified completed waste cleanups.
+
+🔥 **NEW: Firebase Authentication Integration!**
+- Email/Password authentication
+- Google Sign-In (one-click login)
+- Secure token-based authentication
+- Role-based access control
+- See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for setup instructions
 
 🚀 Features
 👤 User (Public User)
 
-Register / Login
+Register / Login (Email/Password or Google)
 
 Submit waste reports with:
 
@@ -31,7 +38,7 @@ View public list of all completed reports
 
 🧹 Worker (Municipal Staff)
 
-Login
+Login (Email/Password or Google)
 
 View:
 
