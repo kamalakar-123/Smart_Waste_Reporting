@@ -138,6 +138,48 @@ def get_admin_stats():
     }
 
 
+@app.route('/admin/reports')
+@login_required
+@role_required('admin')
+def admin_reports():
+    db = get_db()
+    cur = db.cursor()
+    # filter param: pending | inprogress | completed | all
+    f = (request.args.get('filter') or '').strip().lower()
+    if f == 'pending':
+        cur.execute("SELECT c.*, u.username as reporter FROM complaints c JOIN users u ON c.user_id=u.id WHERE c.status='Pending' ORDER BY c.created_at DESC")
+    elif f == 'inprogress':
+        cur.execute("SELECT c.*, u.username as reporter FROM complaints c JOIN users u ON c.user_id=u.id WHERE c.status IN ('Accepted','In Progress') ORDER BY c.created_at DESC")
+    elif f == 'completed':
+        cur.execute("SELECT c.*, u.username as reporter FROM complaints c JOIN users u ON c.user_id=u.id WHERE c.status='Completed' ORDER BY c.updated_at DESC")
+    else:
+        cur.execute("SELECT c.*, u.username as reporter FROM complaints c JOIN users u ON c.user_id=u.id ORDER BY c.created_at DESC")
+    reports = cur.fetchall()
+    return render_template('admin_reports.html', reports=reports, filter=f)
+
+
+@app.route('/admin/users')
+@login_required
+@role_required('admin')
+def admin_users():
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT id, username, email, phone, role, created_at FROM users ORDER BY created_at DESC")
+    users = cur.fetchall()
+    return render_template('admin_users.html', users=users)
+
+
+@app.route('/admin/workers')
+@login_required
+@role_required('admin')
+def admin_workers():
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT id, username, email, phone, role, created_at FROM users WHERE role='worker' ORDER BY created_at DESC")
+    workers = cur.fetchall()
+    return render_template('admin_workers.html', workers=workers)
+
+
 @app.route('/')
 def index():
     if 'user_id' in session:

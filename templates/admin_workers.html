@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<section data-aos="fade-up">
+  <h2>Workers</h2>
+  <div class="card" style="margin-top:12px; overflow:auto">
+    <table class="table">
+      <thead>
+        <tr><th>ID</th><th>Username</th><th>Email</th><th>Phone</th><th>Joined</th></tr>
+      </thead>
+      <tbody>
+        {% for w in workers %}
+        <tr>
+          <td>{{ w['id'] }}</td>
+          <td>{{ w['username'] }}</td>
+          <td>{{ w['email'] }}</td>
+          <td>{{ w['phone'] }}</td>
+          <td>{{ w['created_at'] }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No workers found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

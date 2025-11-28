@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+<section data-aos="fade-up">
+  <h2>Admin Reports {% if filter %}- {{ filter|title }}{% endif %}</h2>
+  <div class="cards-list">
+    {% for c in reports %}
+    <div class="card report" data-aos="fade-up">
+      <div class="card-row">
+        <div class="img-col">
+          {% if c['image_before_path'] %}
+            <img src="/{{ c['image_before_path'] }}" alt="before">
+          {% else %}
+            <div class="muted">No image</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>{{ c['description'] }}</h3>
+        <p class="muted">By {{ c['reporter'] }} | Updated: {{ c['updated_at'] }}</p>
+        <p><strong>Status:</strong> <span class="badge {{ c['status']|lower|replace(' ', '-') }}">{{ c['status'] }}</span></p>
+        <div class="card-actions">
+          <a class="btn small" href="{{ url_for('complaint_detail', cid=c['id']) }}">View</a>
+          {% if c['latitude'] and c['longitude'] %}
+            <a class="btn small" href="https://www.google.com/maps?q={{ c['latitude'] }},{{ c['longitude'] }}" target="_blank"><i class='bx bx-map'></i> Open in Maps</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+      <p>No reports found for this filter.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

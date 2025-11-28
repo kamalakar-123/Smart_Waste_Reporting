@@ -7,6 +7,7 @@
 
     <h3 style="margin-top:20px">System Overview</h3>
     <div class="impact-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:12px">
+      <a class="card-link" href="{{ url_for('admin_users') }}">
       <div class="card stat-card" data-aos="fade-up">
         <div class="card-icon" style="color:#3aa0ff"><i class='bx bx-user'></i></div>
         <div class="card-body">
@@ -14,7 +15,9 @@
           <p class="muted">Total Users</p>
         </div>
       </div>
+      </a>
 
+      <a class="card-link" href="{{ url_for('admin_workers') }}">
       <div class="card stat-card" data-aos="fade-up">
         <div class="card-icon" style="color:#9b59b6"><i class='bx bx-hard-hat'></i></div>
         <div class="card-body">
@@ -22,7 +25,9 @@
           <p class="muted">Total Workers</p>
         </div>
       </div>
+      </a>
 
+      <a class="card-link" href="{{ url_for('admin_reports') }}">
       <div class="card stat-card" data-aos="fade-up">
         <div class="card-icon" style="color:#e74c3c"><i class='bx bx-file'></i></div>
         <div class="card-body">
@@ -30,10 +35,12 @@
           <p class="muted">Total Reports</p>
         </div>
       </div>
+      </a>
     </div>
 
     <h3 style="margin-top:24px">Complaints Status</h3>
     <div class="impact-cards" style="display:flex; gap:12px; margin-top:8px">
+      <a class="card-link" href="{{ url_for('admin_reports') }}?filter=pending">
       <div class="card stat-card" data-aos="fade-up">
         <div class="card-icon" style="color:#ff8a3d"><i class='bx bx-time'></i></div>
         <div class="card-body">
@@ -41,7 +48,9 @@
           <p class="muted">Pending</p>
         </div>
       </div>
+      </a>
 
+      <a class="card-link" href="{{ url_for('admin_reports') }}?filter=inprogress">
       <div class="card stat-card inprogress" data-aos="fade-up">
         <div class="card-icon"><i class='bx bx-wrench'></i></div>
         <div class="card-body">
@@ -49,7 +58,9 @@
           <p class="muted">In Progress</p>
         </div>
       </div>
+      </a>
 
+      <a class="card-link" href="{{ url_for('admin_reports') }}?filter=completed">
       <div class="card stat-card completed" data-aos="fade-up">
         <div class="card-icon"><i class='bx bx-check'></i></div>
         <div class="card-body">
@@ -57,28 +68,10 @@
           <p class="muted">Completed</p>
         </div>
       </div>
-    </div>
-
-    <h3 style="margin-top:24px">Quick Actions</h3>
-    <div class="small-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-top:12px">
-      <a class="card-link" href="{{ url_for('public_reports') }}">
-        <div class="card small-card" data-aos="zoom-in" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
-          <div class="card-body">
-            <h3 style="color:white"><i class='bx bx-list-ul'></i></h3>
-            <p style="color:rgba(255,255,255,0.95); font-weight:600">View All Reports</p>
-          </div>
-        </div>
-      </a>
-
-      <a class="card-link" href="{{ url_for('profile') }}">
-        <div class="card small-card" data-aos="zoom-in" style="background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
-          <div class="card-body">
-            <h3 style="color:white"><i class='bx bx-user-circle'></i></h3>
-            <p style="color:rgba(255,255,255,0.95); font-weight:600">My Profile</p>
-          </div>
-        </div>
       </a>
     </div>
+
+    <!-- Quick Actions removed as requested -->
 
     <!-- Worker Management Section -->
     <h3 style="margin-top:32px">👷 Worker Management</h3>
